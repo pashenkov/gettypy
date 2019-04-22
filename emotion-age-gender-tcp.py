@@ -25,20 +25,18 @@ s.listen(1)
 conn, addr = s.accept()
 
 # print connection address when someone connects
-print ('Connection address:', addr)
-
-
+print('Connection address:', addr)
 
 
 enableGenderIcons = True
 
-male_icon = cv2.imread("dataset/male.jpg")
+male_icon = cv2.imread("../dataset/male.jpg")
 male_icon = cv2.resize(male_icon, (40, 40))
 
-female_icon = cv2.imread("dataset/female.jpg")
+female_icon = cv2.imread("../dataset/female.jpg")
 female_icon = cv2.resize(female_icon, (40, 40))
 
-face_cascade = cv2.CascadeClassifier('../c16/haarcascade_files/haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier('../haarcascade_files/haarcascade_frontalface_default.xml')
 
 def preprocess_image(image_path):
     img = load_img(image_path, target_size=(224, 224))
@@ -136,7 +134,7 @@ def ageModel():
 	base_model_output = Activation('softmax')(base_model_output)
 	
 	age_model = Model(inputs=model.input, outputs=base_model_output)
-	age_model.load_weights("models/age_model_weights.h5")
+	age_model.load_weights("../models/age_model_weights.h5")
 	return age_model
 
 def genderModel():
@@ -148,14 +146,14 @@ def genderModel():
 	base_model_output = Activation('softmax')(base_model_output)
 
 	gender_model = Model(inputs=model.input, outputs=base_model_output)
-	gender_model.load_weights("models/gender_model_weights.h5")
+	gender_model.load_weights("../models/gender_model_weights.h5")
 	return gender_model
 
 def emotionModel():
 
 	#emotion_model = model_from_json(open("models/facial_expression_model_structure.json", "r").read())
 	emotion_model = loadEmotionModel()
-	emotion_model.load_weights('models/facial_expression_model_weights.h5') #load weights
+	emotion_model.load_weights('../models/facial_expression_model_weights.h5') #load weights
 	return emotion_model
 
 age_model = ageModel()
@@ -181,7 +179,7 @@ while(True):
 	faces = face_cascade.detectMultiScale(img, 1.3, 5)
 	
 	for (x, y, w, h) in faces:
-		if w > 130: #ignore small faces
+		if w > 50:  # 130: #ignore small faces
 			
 			#extract detected face
 			detected_face = img[int(y):int(y+h), int(x):int(x+w)] #crop detected face
