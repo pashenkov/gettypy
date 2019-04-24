@@ -171,7 +171,13 @@ def jsonSender():
 
     json_str = '[{"numPep": "' + str(numPep) + \
                '", "emotion01": "' + emotion01 + \
-               '", "emotion02": "' + emotion02 + '"}]\r\n'
+               '", "emotion02": "' + emotion02 + \
+               '", "gender01": "' + gender01 +\
+               '", "gender02": "' + gender02 +\
+               '", "age01": "' + age01 +\
+               '", "age02": "' + age02 +\
+               '", "title": "' + title +\
+               '", "description": "' + description +'"}]\r\n'
 
     print(json_str)
     conn.send(json_str.encode('utf-8'))
@@ -263,7 +269,7 @@ while True:
 
     # Reset the number of people that are detected after certain period
     if numPep == 0:
-        if time.time()- peopleLeaveTime> jsonSendingInterval:
+        if time.time() - peopleLeaveTime > jsonSendingInterval:
             peopleLeaveTime= time.time()
             emotion01 = "neutral"
             emotion02 = "neutral"
@@ -272,13 +278,11 @@ while True:
         peopleLeaveTime =time.time()# reset timer
 
 
-    predictions = []
+    predictions = [] # a list for saving multiple emotions
     for (x, y, w, h) in faces:
         if w > 50:  # 130: #ignore small faces
             # extract detected face
-
             detected_face = img[int(y):int(y + h), int(x):int(x + w)]  # crop detected face
-            # cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
             # detect emotions
             detected_face = cv2.cvtColor(detected_face, cv2.COLOR_BGR2GRAY)  # transform to gray scale
@@ -288,17 +292,17 @@ while True:
             img_pixels = np.expand_dims(img_pixels, axis=0)
             img_pixels /= 255  # normalize all pixels to scale of [0, 1]
 
-            predictions.append(emotion_model.predict(img_pixels))
 
+
+            predictions.append(emotion_model.predict(img_pixels)) # append emotion to the predictions list
 
             max_index1 = np.argmax(predictions[0])  # find max of array
             maxPredictions1.append(max_index1)
+
+            # when the predictions length is equal 2 get and append another emotion
             if(len(predictions)==2):
                 max_index2 =np.argmax(predictions[1])
                 maxPredictions2.append(max_index2)
-            # add the maxindex into the max prediction index array
-
-
 
             # Update the emotion
             if (shouldUpdateEmotion):
@@ -352,6 +356,17 @@ while True:
                 print("detected face has no margin")
 
             try:
+                detected_face = cv2.resize(detected_face, (224, 224))
+
+                img_pixels = image.img_to_array(detected_face)
+                img_pixels = np.expand_dims(img_pixels, axis=0)
+                img_pixels /= 255
+                # find out age and gender
+                age_distributions = age_model.predict(img_pixels)
+
+                apparent_age = int(np.floor(np.sum(age_distributions * output_indexes, axis=1))[0])
+                print("Age: ", apparent_age)
+
                 '''
                 #vgg-face expects inputs (224, 224, 3)
                 detected_face = cv2.resize(detected_face, (224, 224))
