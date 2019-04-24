@@ -14,6 +14,9 @@ from os import listdir
 import socket
 import time
 
+import threading
+
+
 # set server variables
 TCP_IP = '127.0.0.1'
 TCP_PORT = 7001
@@ -37,15 +40,6 @@ female_icon = cv2.imread("../dataset/female.jpg")
 female_icon = cv2.resize(female_icon, (40, 40))
 
 face_cascade = cv2.CascadeClassifier('../haarcascade_files/haarcascade_frontalface_default.xml')
-
-shouldUpdateEmotion=False
-maxPredictions = []
-currentTime = 0.0
-peopleLeaveTime = 0.0
-jsonSendingInterval = 10.0
-peopleLeaveInteval = 5.0
-
-
 
 
 def preprocess_image(image_path):
@@ -192,12 +186,15 @@ def mostFrequent(arr, n):
 
 # send json to touchdesigner
 def jsonSender():
+    #threading.Timer(5.0, jsonSender).start()
     print("send message..")
-    command = "face"
+
     json_str = '[{"numPep": "' + str(numPep) + \
                '", "emotion01": "' + emotion01 + '"}]\r\n'
     print(json_str)
     conn.send(json_str.encode('utf-8'))
+
+
 
 
 age_model = ageModel()
@@ -210,6 +207,19 @@ output_indexes = np.array([i for i in range(0, 101)])
 
 emotions = ('angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral')
 
+shouldUpdateEmotion = False
+
+'''Timer Area'''
+currentTime = 0.0
+peopleLeaveTime=0.0
+jsonSendingInterval = 10.0
+
+counter = 10000
+
+'''Prediction Lists for Getting the Most Frequent Emotion'''
+maxPredictions1 = []
+maxPredictions2 = []
+
 cap = cv2.VideoCapture(0)  # capture webcam
 
 '''DATA FOR JSON'''
@@ -218,12 +228,14 @@ emotion01 = "neutral"
 emotion02 = "neutral"
 gender01 = "male"
 gender02 = "female"
-age01 = "24"
-age02 = "75"
+age01 = 24
+age02 = 24
 title = ""
 description = ""
 
+
 while True:
+
     ret, img = cap.read()
     # img = cv2.resize(img, (640, 360))
 
@@ -231,9 +243,35 @@ while True:
 
     faces = face_cascade.detectMultiScale(img, 1.3, 5)
 
+    # For some reason when no faces detected, it is a tuple, when there is faces detected, it become a np array
+    if (type(faces) is not tuple):
+        print("Number of faces: ", len(faces))
+        numPep = len(faces)
+    else:  # so when it is a tuple which means no people are detected
+        numPep = 0
+
+
+
+    # Timer for update the emotion
+    if currentTime < time.time():
+        currentTime = time.time() + jsonSendingInterval  # reset timer
+        shouldUpdateEmotion = True
+
+
+    if numPep == 0:
+        if time.time()- peopleLeaveTime> jsonSendingInterval:
+            peopleLeaveTime= time.time()
+            emotion01 = "neutral"
+            emotion02 = "neutral"
+            jsonSender()
+    else:
+        peopleLeaveTime =time.time()
+
+
+
+
     for (x, y, w, h) in faces:
         if w > 50:  # 130: #ignore small faces
-
             # extract detected face
             detected_face = img[int(y):int(y + h), int(x):int(x + w)]  # crop detected face
             # cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
@@ -248,28 +286,39 @@ while True:
 
             predictions = emotion_model.predict(img_pixels)
 
-            max_index = np.argmax(predictions[0]) # find max of array
+            max_index = np.argmax(predictions[0])  # find max of array
 
-            maxPredictions.append(max_index)  # add the maxindex into the max prediction index array
 
-            print("Max Prediction Index List: ", maxPredictions)
+
+            maxPredictions1.append(max_index)  # add the maxindex into the max prediction index array
+
+            print("Max Prediction Index List: ", maxPredictions1)
 
             # Update the emotion
-            if(shouldUpdateEmotion):
-                shouldUpdateEmotion = False # reset to false
+            if (shouldUpdateEmotion):
+                shouldUpdateEmotion = False  # reset to false
+
 
                 # get the most frequent value in the maxPredictions list
-                choosenIndex1 = 6 if len(maxPredictions) == 0 else mostFrequent(maxPredictions, len(maxPredictions))
+                choosenIndex1 = 6 if len(maxPredictions1) == 0 else mostFrequent(maxPredictions1, len(maxPredictions1))
+                print("Output Index 1: ", choosenIndex1)
 
-                maxPredictions.clear()  # clear itself after reach the threshold
-                emotion01 = emotions[choosenIndex1]
-                print("Output Index: ", choosenIndex1)
+                emotion01 = emotions[choosenIndex1] # decide emotion01
 
-                jsonSender()  # Send the Json to touch designer
+                # reset the emotion when people leave
+                if numPep==0:
+                    if len(maxPredictions1)==0: # if there is nothing in the list which means the people has left
+                        emotion01 = "neutral"
+                        emotion02 = "neutral"
+                elif numPep==1:
+                    if len(maxPredictions2) == 0:
+                        emotion02 = "neutral"
 
+                jsonSender()
+                maxPredictions1.clear()
+                maxPredictions2.clear()
 
             cv2.putText(img, emotions[max_index], (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-
 
             ''' 
             # Draw Emotion Probabilities Table (discarded)
@@ -336,34 +385,10 @@ while True:
 
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-
     cv2.imshow('img', img)
     cv2.imshow('emotion probabilities', canvas)
 
     key = cv2.waitKey(1)
-
-    # Timer for update the emotion
-    if currentTime < time.time():
-        shouldUpdateEmotion = True # be able to update the emotion
-        currentTime = time.time() + jsonSendingInterval # reset timer
-
-        # For some reason when no faces detected, it is a tuple, when there is faces detected, it become a np array
-        if (type(faces) is not tuple):
-            print("Number of faces: ", len(faces))
-            numPep = len(faces)
-        else: # so when it is a tuple which means no people are detected
-            numPep = 0
-
-    # Timer for reset the emotion when people leave
-    if numPep == 0: # When The user leave over certain time, emotion will reset to neutral
-        if peopleLeaveTime<time.time():
-            peopleLeaveTime = time.time()+peopleLeaveInteval # reset timer
-            emotion01 = "neutral"
-            emotion02 = "neutral"
-    elif numPep == 1:
-        if peopleLeaveTime<time.time():
-            peopleLeaveTime = time.time()+peopleLeaveInteval # reset timer
-            emotion02 = "neutral"
 
     if key & 0xFF == ord('a'):
         jsonSender()
