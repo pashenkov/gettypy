@@ -170,7 +170,9 @@ def jsonSender():
     print("send message..")
 
     json_str = '[{"numPep": "' + str(numPep) + \
-               '", "emotion01": "' + emotion01 + '"}]\r\n'
+               '", "emotion01": "' + emotion01 + \
+               '", "emotion02": "' + emotion02 + '"}]\r\n'
+
     print(json_str)
     conn.send(json_str.encode('utf-8'))
 
@@ -270,9 +272,11 @@ while True:
         peopleLeaveTime =time.time()# reset timer
 
 
+    predictions = []
     for (x, y, w, h) in faces:
         if w > 50:  # 130: #ignore small faces
             # extract detected face
+
             detected_face = img[int(y):int(y + h), int(x):int(x + w)]  # crop detected face
             # cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
 
@@ -284,23 +288,23 @@ while True:
             img_pixels = np.expand_dims(img_pixels, axis=0)
             img_pixels /= 255  # normalize all pixels to scale of [0, 1]
 
-            predictions = emotion_model.predict(img_pixels)
+            predictions.append(emotion_model.predict(img_pixels))
+
 
             max_index1 = np.argmax(predictions[0])  # find max of array
-
-            max_index2 = 6 # todo get the another face
-            print(len(predictions))
-
-            # add the maxindex into the max prediction index array
             maxPredictions1.append(max_index1)
-            maxPredictions2.append(max_index2)
+            if(len(predictions)==2):
+                max_index2 =np.argmax(predictions[1])
+                maxPredictions2.append(max_index2)
+            # add the maxindex into the max prediction index array
 
-            print("Max Prediction Index List: ", maxPredictions1)
+
 
             # Update the emotion
             if (shouldUpdateEmotion):
                 shouldUpdateEmotion = False  # reset to false
-
+                print("Max Prediction 1 Index List: ", maxPredictions1)
+                print("Max Prediction 2 Index List: ", maxPredictions2)
                 # get the most frequent value in the maxPredictions list
                 choosenIndex1 = getChoosenIndex(maxPredictions1)
                 choosenIndex2 = getChoosenIndex(maxPredictions2)
