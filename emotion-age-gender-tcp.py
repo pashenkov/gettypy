@@ -163,6 +163,17 @@ def emotionModel():
     return emotion_model
 
 
+
+# send json to touchdesigner
+def jsonSender():
+    #threading.Timer(5.0, jsonSender).start()
+    print("send message..")
+
+    json_str = '[{"numPep": "' + str(numPep) + \
+               '", "emotion01": "' + emotion01 + '"}]\r\n'
+    print(json_str)
+    conn.send(json_str.encode('utf-8'))
+
 # return the most frequency
 def mostFrequent(arr, n):
     arr.sort()
@@ -183,16 +194,8 @@ def mostFrequent(arr, n):
         res = arr[n - 1]
     return res
 
-
-# send json to touchdesigner
-def jsonSender():
-    #threading.Timer(5.0, jsonSender).start()
-    print("send message..")
-
-    json_str = '[{"numPep": "' + str(numPep) + \
-               '", "emotion01": "' + emotion01 + '"}]\r\n'
-    print(json_str)
-    conn.send(json_str.encode('utf-8'))
+def getChoosenIndex(choosenIndex):
+    return 6 if len(choosenIndex) == 0 else mostFrequent(choosenIndex, len(choosenIndex))
 
 
 
@@ -251,13 +254,12 @@ while True:
         numPep = 0
 
 
-
     # Timer for update the emotion
     if currentTime < time.time():
         currentTime = time.time() + jsonSendingInterval  # reset timer
         shouldUpdateEmotion = True
 
-
+    # Reset the number of people that are detected after certain period
     if numPep == 0:
         if time.time()- peopleLeaveTime> jsonSendingInterval:
             peopleLeaveTime= time.time()
@@ -265,9 +267,7 @@ while True:
             emotion02 = "neutral"
             jsonSender()
     else:
-        peopleLeaveTime =time.time()
-
-
+        peopleLeaveTime =time.time()# reset timer
 
 
     for (x, y, w, h) in faces:
@@ -286,11 +286,14 @@ while True:
 
             predictions = emotion_model.predict(img_pixels)
 
-            max_index = np.argmax(predictions[0])  # find max of array
+            max_index1 = np.argmax(predictions[0])  # find max of array
 
+            max_index2 = 6 # todo get the another face
+            print(len(predictions))
 
-
-            maxPredictions1.append(max_index)  # add the maxindex into the max prediction index array
+            # add the maxindex into the max prediction index array
+            maxPredictions1.append(max_index1)
+            maxPredictions2.append(max_index2)
 
             print("Max Prediction Index List: ", maxPredictions1)
 
@@ -298,12 +301,14 @@ while True:
             if (shouldUpdateEmotion):
                 shouldUpdateEmotion = False  # reset to false
 
-
                 # get the most frequent value in the maxPredictions list
-                choosenIndex1 = 6 if len(maxPredictions1) == 0 else mostFrequent(maxPredictions1, len(maxPredictions1))
+                choosenIndex1 = getChoosenIndex(maxPredictions1)
+                choosenIndex2 = getChoosenIndex(maxPredictions2)
                 print("Output Index 1: ", choosenIndex1)
+                print("Output Index 2: ", choosenIndex2)
 
                 emotion01 = emotions[choosenIndex1] # decide emotion01
+                emotion02 = emotions[choosenIndex2] # decide emotion02
 
                 # reset the emotion when people leave
                 if numPep==0:
@@ -318,7 +323,7 @@ while True:
                 maxPredictions1.clear()
                 maxPredictions2.clear()
 
-            cv2.putText(img, emotions[max_index], (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+            cv2.putText(img, emotions[max_index1], (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
             ''' 
             # Draw Emotion Probabilities Table (discarded)
