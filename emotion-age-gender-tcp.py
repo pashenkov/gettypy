@@ -174,8 +174,8 @@ def jsonSender():
                '", "emotion02": "' + emotion02 + \
                '", "gender01": "' + gender01 +\
                '", "gender02": "' + gender02 +\
-               '", "age01": "' + age01 +\
-               '", "age02": "' + age02 +\
+               '", "age01": "' + str(age01) +\
+               '", "age02": "' + str(age02) +\
                '", "title": "' + title +\
                '", "description": "' + description +'"}]\r\n'
 
