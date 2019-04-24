@@ -202,8 +202,8 @@ def mostFrequent(arr, n):
         res = arr[n - 1]
     return res
 
-def getChoosenIndex(choosenIndex):
-    return 6 if len(choosenIndex) == 0 else mostFrequent(choosenIndex, len(choosenIndex))
+def getChoosenElement(choosenIndex, defaultReturn):
+    return defaultReturn if len(choosenIndex) == 0 else mostFrequent(choosenIndex, len(choosenIndex))
 
 
 
@@ -227,9 +227,12 @@ jsonSendingInterval = 10.0
 
 counter = 10000
 
-'''Prediction Lists for Getting the Most Frequent Emotion'''
-maxPredictions1 = []
-maxPredictions2 = []
+'''Prediction Lists for Getting the Most Frequent Emotion age gender'''
+max_emotionIndex1 = []
+max_emotionIndex2 = []
+max_genderIndex1=[]
+max_genderIndex2=[]
+
 
 cap = cv2.VideoCapture(0)  # capture webcam
 
@@ -239,8 +242,8 @@ emotion01 = "neutral"
 emotion02 = "neutral"
 gender01 = "male"
 gender02 = "female"
-age01 = 24
-age02 = 24
+age01 = 0
+age02 = 0
 title = ""
 description = ""
 
@@ -273,6 +276,8 @@ while True:
             peopleLeaveTime= time.time()
             emotion01 = "neutral"
             emotion02 = "neutral"
+            age01 = 0
+            age02 = 0
             jsonSender()
     else:
         peopleLeaveTime =time.time()# reset timer
@@ -281,6 +286,7 @@ while True:
     predictions = [] # a list for saving multiple emotions
     for (x, y, w, h) in faces:
         if w > 50:  # 130: #ignore small faces
+
             # extract detected face
             detected_face = img[int(y):int(y + h), int(x):int(x + w)]  # crop detected face
 
@@ -292,46 +298,93 @@ while True:
             img_pixels = np.expand_dims(img_pixels, axis=0)
             img_pixels /= 255  # normalize all pixels to scale of [0, 1]
 
+            emotion_distributions = emotion_model.predict(img_pixels)
+            age_distributions = 0
+            gender_distribution=0
+
+            try:
+                # age gender data set has 40% margin around the face. expand detected face.
+                margin = 30
+                margin_x = int((w * margin) / 100)
+                margin_y = int((h * margin) / 100)
+                detected_face = img[int(y - margin_y):int(y + h + margin_y), int(x - margin_x):int(x + w + margin_x)]
+            except:
+                print("detected face has no margin")
 
 
-            predictions.append(emotion_model.predict(img_pixels)) # append emotion to the predictions list
+            try:
+                detected_face = cv2.resize(detected_face, (224, 224))
 
-            max_index1 = np.argmax(predictions[0])  # find max of array
-            maxPredictions1.append(max_index1)
+                img_pixels = image.img_to_array(detected_face)
+                img_pixels = np.expand_dims(img_pixels, axis=0)
+                img_pixels /= 255
+
+                # find out age and gender
+                age_distributions = age_model.predict(img_pixels)
+                gender_distribution = gender_model.predict(img_pixels)[0]
+            except Exception as e:
+                print("exception", str(e))
+
+            data = []
+            data.append(emotion_distributions)
+            data.append(age_distributions)
+            # data.append(gender_distribution)
+
+            predictions.append(data) # append emotion to the predictions list
+
+            max_emotionIndex1.append(np.argmax(predictions[0][0]))  # find max of array
+            age01=np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0]
+            # max_genderIndex1.append(np.argmax(predictions[0][2]))
 
             # when the predictions length is equal 2 get and append another emotion
             if(len(predictions)==2):
-                max_index2 =np.argmax(predictions[1])
-                maxPredictions2.append(max_index2)
+                max_emotionIndex2.append(np.argmax(predictions[1][0]))
+                age02 = np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0]
+                # max_genderIndex2.append(np.argmax(predictions[1][2]))
 
             # Update the emotion
             if (shouldUpdateEmotion):
                 shouldUpdateEmotion = False  # reset to false
-                print("Max Prediction 1 Index List: ", maxPredictions1)
-                print("Max Prediction 2 Index List: ", maxPredictions2)
-                # get the most frequent value in the maxPredictions list
-                choosenIndex1 = getChoosenIndex(maxPredictions1)
-                choosenIndex2 = getChoosenIndex(maxPredictions2)
-                print("Output Index 1: ", choosenIndex1)
-                print("Output Index 2: ", choosenIndex2)
+                print("Max emotion 1 Index List: ", max_emotionIndex1)
+                print("Max emotion 2 Index List: ", max_emotionIndex2)
+                # print("Max gender 1 Index List: ", max_genderIndex1)
+                # print("Max gender 2 Index List: ", max_genderIndex2)
 
-                emotion01 = emotions[choosenIndex1] # decide emotion01
-                emotion02 = emotions[choosenIndex2] # decide emotion02
+                # get the most frequent value in the maxPredictions list
+                emotionChoosenIndex1 = getChoosenElement(max_emotionIndex1,6)
+                emotionChoosenIndex2 = getChoosenElement(max_emotionIndex2,6)
+                # genderChoosenIndex1 = getChoosenElement(max_genderIndex1)
+                # genderChoosenIndex2 = getChoosenElement(max_genderIndex2)
+
+                emotion01 = emotions[emotionChoosenIndex1] # decide emotion01
+                emotion02 = emotions[emotionChoosenIndex2] # decide emotion02
+                # gender01 = "male" if genderChoosenIndex1==1 else "female"
+                # gender02 = "male" if genderChoosenIndex2==1 else "female"
+
+                print("Output Emotion1: ", emotion01)
+                print("Output Emotion2: ", emotion02)
+                # print("Output Gender1: ", gender01)
+                # print("Output Gender2: ", gender02)
+                print("Output Age1: ", age01)
+                print("Output Age2: ", age02)
 
                 # reset the emotion when people leave
-                if numPep==0:
-                    if len(maxPredictions1)==0: # if there is nothing in the list which means the people has left
-                        emotion01 = "neutral"
+                if numPep==1:
+                    if len(max_emotionIndex2) == 0:
                         emotion02 = "neutral"
-                elif numPep==1:
-                    if len(maxPredictions2) == 0:
-                        emotion02 = "neutral"
+                        gender02 = "male"
+                        age02 = 0
 
                 jsonSender()
-                maxPredictions1.clear()
-                maxPredictions2.clear()
 
-            cv2.putText(img, emotions[max_index1], (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                # Reset the List
+                max_emotionIndex1.clear()
+                max_emotionIndex2.clear()
+                max_genderIndex1.clear()
+                max_genderIndex2.clear()
+
+
+            cv2.putText(img, emotions[emotionChoosenIndex1], (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
             ''' 
             # Draw Emotion Probabilities Table (discarded)
@@ -345,67 +398,67 @@ while True:
                             cv2.FONT_HERSHEY_SIMPLEX, 0.45,
                             (255, 255, 255), 2)
             '''
+            # try:
+            #     # age gender data set has 40% margin around the face. expand detected face.
+            #     margin = 30
+            #     margin_x = int((w * margin) / 100)
+            #     margin_y = int((h * margin) / 100)
+            #     detected_face = img[int(y - margin_y):int(y + h + margin_y), int(x - margin_x):int(x + w + margin_x)]
+            # except:
+            #     print("detected face has no margin")
+            #
+            # try:
+            #     detected_face = cv2.resize(detected_face, (224, 224))
+            #
+            #     img_pixels = image.img_to_array(detected_face)
+            #     img_pixels = np.expand_dims(img_pixels, axis=0)
+            #     img_pixels /= 255
+            #     # find out age and gender
+            #     age_distributions = age_model.predict(img_pixels)
+            #
+            #     apparent_age = int(np.floor(np.sum(age_distributions * output_indexes, axis=1))[0])
+            #     print("Age: ", apparent_age)
+            #
+            #     '''
+            #     #vgg-face expects inputs (224, 224, 3)
+            #     detected_face = cv2.resize(detected_face, (224, 224))
+            #
+            #     img_pixels = image.img_to_array(detected_face)
+            #     img_pixels = np.expand_dims(img_pixels, axis = 0)
+            #     img_pixels /= 255
+            #
+            #     #find out age and gender
+            #     age_distributions = age_model.predict(img_pixels)
+            #     apparent_age = str(int(np.floor(np.sum(age_distributions * output_indexes, axis = 1))[0]))
+            #
+            #     gender_distribution = gender_model.predict(img_pixels)[0]
+            #     gender_index = np.argmax(gender_distribution)
+            #
+            #     if gender_index == 0: gender = "F"
+            #     else: gender = "M"
+            #
+            #     #background for age gender declaration
+            #     info_box_color = (46,200,255)
+            #     #triangle_cnt = np.array( [(x+int(w/2), y+10), (x+int(w/2)-25, y-20), (x+int(w/2)+25, y-20)] )
+            #     triangle_cnt = np.array( [(x+int(w/2), y), (x+int(w/2)-20, y-20), (x+int(w/2)+20, y-20)] )
+            #     cv2.drawContours(img, [triangle_cnt], 0, info_box_color, -1)
+            #     cv2.rectangle(img,(x+int(w/2)-50,y-20),(x+int(w/2)+50,y-90),info_box_color,cv2.FILLED)
+            #
+            #     #labels for age and gender
+            #     cv2.putText(img, apparent_age, (x+int(w/2), y - 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 111, 255), 2)
+            #
+            #     if enableGenderIcons:
+            #         if gender == 'M': gender_icon = male_icon
+            #         else: gender_icon = female_icon
+            #
+            #         img[y-75:y-75+male_icon.shape[0], x+int(w/2)-45:x+int(w/2)-45+male_icon.shape[1]] = gender_icon
+            #     else:
+            #         cv2.putText(img, gender, (x+int(w/2)-42, y - 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 111, 255), 2)
+            #     '''
+            #
+            # except Exception as e:
+            #     print("exception", str(e))
 
-            try:
-                # age gender data set has 40% margin around the face. expand detected face.
-                margin = 30
-                margin_x = int((w * margin) / 100)
-                margin_y = int((h * margin) / 100)
-                detected_face = img[int(y - margin_y):int(y + h + margin_y), int(x - margin_x):int(x + w + margin_x)]
-            except:
-                print("detected face has no margin")
-
-            try:
-                detected_face = cv2.resize(detected_face, (224, 224))
-
-                img_pixels = image.img_to_array(detected_face)
-                img_pixels = np.expand_dims(img_pixels, axis=0)
-                img_pixels /= 255
-                # find out age and gender
-                age_distributions = age_model.predict(img_pixels)
-
-                apparent_age = int(np.floor(np.sum(age_distributions * output_indexes, axis=1))[0])
-                print("Age: ", apparent_age)
-
-                '''
-                #vgg-face expects inputs (224, 224, 3)
-                detected_face = cv2.resize(detected_face, (224, 224))
-                
-                img_pixels = image.img_to_array(detected_face)
-                img_pixels = np.expand_dims(img_pixels, axis = 0)
-                img_pixels /= 255
-                
-                #find out age and gender
-                age_distributions = age_model.predict(img_pixels)
-                apparent_age = str(int(np.floor(np.sum(age_distributions * output_indexes, axis = 1))[0]))
-                
-                gender_distribution = gender_model.predict(img_pixels)[0]
-                gender_index = np.argmax(gender_distribution)
-                
-                if gender_index == 0: gender = "F"
-                else: gender = "M"
-            
-                #background for age gender declaration
-                info_box_color = (46,200,255)
-                #triangle_cnt = np.array( [(x+int(w/2), y+10), (x+int(w/2)-25, y-20), (x+int(w/2)+25, y-20)] )
-                triangle_cnt = np.array( [(x+int(w/2), y), (x+int(w/2)-20, y-20), (x+int(w/2)+20, y-20)] )
-                cv2.drawContours(img, [triangle_cnt], 0, info_box_color, -1)
-                cv2.rectangle(img,(x+int(w/2)-50,y-20),(x+int(w/2)+50,y-90),info_box_color,cv2.FILLED)
-                
-                #labels for age and gender
-                cv2.putText(img, apparent_age, (x+int(w/2), y - 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 111, 255), 2)
-                
-                if enableGenderIcons:
-                    if gender == 'M': gender_icon = male_icon
-                    else: gender_icon = female_icon
-                    
-                    img[y-75:y-75+male_icon.shape[0], x+int(w/2)-45:x+int(w/2)-45+male_icon.shape[1]] = gender_icon
-                else:
-                    cv2.putText(img, gender, (x+int(w/2)-42, y - 45), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 111, 255), 2)
-                '''
-
-            except Exception as e:
-                print("exception", str(e))
 
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
