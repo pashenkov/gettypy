@@ -162,8 +162,6 @@ def emotionModel():
     emotion_model.load_weights('../models/facial_expression_model_weights.h5')  # load weights
     return emotion_model
 
-
-
 # send json to touchdesigner
 def jsonSender():
     #threading.Timer(5.0, jsonSender).start()
@@ -205,6 +203,8 @@ def mostFrequent(arr, n):
 def getChoosenElement(choosenIndex, defaultReturn):
     return defaultReturn if len(choosenIndex) == 0 else mostFrequent(choosenIndex, len(choosenIndex))
 
+def getGender(choosenIndex):
+    return "male" if choosenIndex==0 else "female"
 
 
 
@@ -328,18 +328,19 @@ while True:
             data = []
             data.append(emotion_distributions)
             data.append(age_distributions)
-            # data.append(gender_distribution)
+            #data.append(gender_distribution)
 
             predictions.append(data) # append emotion to the predictions list
 
             max_emotionIndex1.append(np.argmax(predictions[0][0]))  # find max of array
-            age01=np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0]
-            # max_genderIndex1.append(np.argmax(predictions[0][2]))
+            age01=int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0])
+            #max_genderIndex1.append(np.argmax(predictions[0][2]))
+            #print(getGender(max_genderIndex1))
 
             # when the predictions length is equal 2 get and append another emotion
             if(len(predictions)==2):
                 max_emotionIndex2.append(np.argmax(predictions[1][0]))
-                age02 = np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0]
+                age02 = int(np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0])
                 # max_genderIndex2.append(np.argmax(predictions[1][2]))
 
             # Update the emotion
