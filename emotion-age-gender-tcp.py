@@ -244,8 +244,8 @@ gender01 = "female"
 gender02 = "female"
 age01 = 0
 age02 = 0
-title = ""
-description = ""
+title = "This is a Title"
+description = "This is a description!!!!!!!!!!!!!!!"
 
 
 while True:
