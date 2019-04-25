@@ -200,7 +200,7 @@ def mostFrequent(arr, n):
         res = arr[n - 1]
     return res
 
-def getChoosenElement(choosenIndex, defaultReturn):
+def getMostFrequentElement(choosenIndex, defaultReturn):
     return defaultReturn if len(choosenIndex) == 0 else mostFrequent(choosenIndex, len(choosenIndex))
 
 def getGender(choosenIndex):
@@ -230,8 +230,8 @@ counter = 10000
 '''Prediction Lists for Getting the Most Frequent Emotion age gender'''
 max_emotionIndex1 = []
 max_emotionIndex2 = []
-max_genderIndex1=[]
-max_genderIndex2=[]
+max_genderIndex1 = []
+max_genderIndex2 = []
 
 
 cap = cv2.VideoCapture(0)  # capture webcam
@@ -254,7 +254,6 @@ while True:
     # img = cv2.resize(img, (640, 360))
 
     canvas = np.zeros((640, 480, 3), dtype="uint8")
-
     faces = face_cascade.detectMultiScale(img, 1.3, 5)
 
     # For some reason when no faces detected, it is a tuple, when there is faces detected, it become a np array
@@ -264,13 +263,12 @@ while True:
     else:  # so when it is a tuple which means no people are detected
         numPep = 0
 
-
     # Timer for update the emotion
     if currentTime < time.time():
         currentTime = time.time() + jsonSendingInterval  # reset timer
         shouldUpdateEmotion = True
 
-    # Reset the number of people that are detected after certain period
+    # Reset and send the number of people that are detected after certain period
     if numPep == 0:
         if time.time() - peopleLeaveTime > jsonSendingInterval:
             peopleLeaveTime= time.time()
@@ -324,18 +322,19 @@ while True:
                 # find out age and gender
                 age_distributions = age_model.predict(img_pixels)
                 gender_distribution = gender_model.predict(img_pixels)[0]
-                gender_index = np.argmax(gender_distribution)
             except Exception as e:
                 print("exception", str(e))
 
-            data = []
+
+            data = [] # a list to save all detections in current loop
             data.append(emotion_distributions)
             data.append(age_distributions)
             data.append(gender_distribution)
 
-            predictions.append(data) # append emotion to the predictions list
+            predictions.append(data) # append data to the predictions list
 
             max_emotionIndex1.append(np.argmax(predictions[0][0]))  # find max of array
+
             age01=int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0])
             gender01=getGender(np.argmax(predictions[0][2]))
 
@@ -352,12 +351,13 @@ while True:
                 print("Max emotion 2 Index List: ", max_emotionIndex2)
 
                 # get the most frequent value in the maxPredictions list
-                emotionChoosenIndex1 = getChoosenElement(max_emotionIndex1,6)
-                emotionChoosenIndex2 = getChoosenElement(max_emotionIndex2,6)
+                emotionChoosenIndex1 = getMostFrequentElement(max_emotionIndex1, 6)
+                emotionChoosenIndex2 = getMostFrequentElement(max_emotionIndex2, 6)
 
                 emotion01 = emotions[emotionChoosenIndex1] # decide emotion01
                 emotion02 = emotions[emotionChoosenIndex2] # decide emotion02
 
+                # TODO DELETE LATER PRINT FOR TESTING
                 print("Output Emotion1: ", emotion01)
                 print("Output Emotion2: ", emotion02)
                 print("Output Gender1: ", gender01)
