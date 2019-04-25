@@ -204,7 +204,7 @@ def getChoosenElement(choosenIndex, defaultReturn):
     return defaultReturn if len(choosenIndex) == 0 else mostFrequent(choosenIndex, len(choosenIndex))
 
 def getGender(choosenIndex):
-    return "male" if choosenIndex==0 else "female"
+    return "male" if choosenIndex==1 else "female"
 
 
 
@@ -240,7 +240,7 @@ cap = cv2.VideoCapture(0)  # capture webcam
 numPep = 0
 emotion01 = "neutral"
 emotion02 = "neutral"
-gender01 = "male"
+gender01 = "female"
 gender02 = "female"
 age01 = 0
 age02 = 0
@@ -278,6 +278,8 @@ while True:
             emotion02 = "neutral"
             age01 = 0
             age02 = 0
+            gender01 = "female"
+            gender02 = "female"
             jsonSender()
     else:
         peopleLeaveTime =time.time()# reset timer
@@ -322,50 +324,44 @@ while True:
                 # find out age and gender
                 age_distributions = age_model.predict(img_pixels)
                 gender_distribution = gender_model.predict(img_pixels)[0]
+                gender_index = np.argmax(gender_distribution)
             except Exception as e:
                 print("exception", str(e))
 
             data = []
             data.append(emotion_distributions)
             data.append(age_distributions)
-            #data.append(gender_distribution)
+            data.append(gender_distribution)
 
             predictions.append(data) # append emotion to the predictions list
 
             max_emotionIndex1.append(np.argmax(predictions[0][0]))  # find max of array
             age01=int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0])
-            #max_genderIndex1.append(np.argmax(predictions[0][2]))
-            #print(getGender(max_genderIndex1))
+            gender01=getGender(np.argmax(predictions[0][2]))
 
             # when the predictions length is equal 2 get and append another emotion
             if(len(predictions)==2):
                 max_emotionIndex2.append(np.argmax(predictions[1][0]))
                 age02 = int(np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0])
-                # max_genderIndex2.append(np.argmax(predictions[1][2]))
+                gender02 = getGender(np.argmax(predictions[1][2]))
 
             # Update the emotion
             if (shouldUpdateEmotion):
                 shouldUpdateEmotion = False  # reset to false
                 print("Max emotion 1 Index List: ", max_emotionIndex1)
                 print("Max emotion 2 Index List: ", max_emotionIndex2)
-                # print("Max gender 1 Index List: ", max_genderIndex1)
-                # print("Max gender 2 Index List: ", max_genderIndex2)
 
                 # get the most frequent value in the maxPredictions list
                 emotionChoosenIndex1 = getChoosenElement(max_emotionIndex1,6)
                 emotionChoosenIndex2 = getChoosenElement(max_emotionIndex2,6)
-                # genderChoosenIndex1 = getChoosenElement(max_genderIndex1)
-                # genderChoosenIndex2 = getChoosenElement(max_genderIndex2)
 
                 emotion01 = emotions[emotionChoosenIndex1] # decide emotion01
                 emotion02 = emotions[emotionChoosenIndex2] # decide emotion02
-                # gender01 = "male" if genderChoosenIndex1==1 else "female"
-                # gender02 = "male" if genderChoosenIndex2==1 else "female"
 
                 print("Output Emotion1: ", emotion01)
                 print("Output Emotion2: ", emotion02)
-                # print("Output Gender1: ", gender01)
-                # print("Output Gender2: ", gender02)
+                print("Output Gender1: ", gender01)
+                print("Output Gender2: ", gender02)
                 print("Output Age1: ", age01)
                 print("Output Age2: ", age02)
 
@@ -373,7 +369,7 @@ while True:
                 if numPep==1:
                     if len(max_emotionIndex2) == 0:
                         emotion02 = "neutral"
-                        gender02 = "male"
+                        gender02 = "female"
                         age02 = 0
 
                 jsonSender()
