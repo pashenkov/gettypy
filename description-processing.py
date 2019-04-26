@@ -1,6 +1,7 @@
 import pandas as pd
 from pandas import ExcelFile
 from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk import pos_tag
 
 df = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Descriptions')
 
@@ -45,15 +46,32 @@ for response in responses:
     print("# sentences: ", len(response_sentences))
 
     for sentence in response_sentences:
+
+        # get the speech tags for the sentence
+        sentence_tag =pos_tag(word_tokenize(sentence))
+        print(sentence_tag)
+        # Check element if exists in list of list
+        hasNoun = 'NN' in (tag for word_tag in sentence_tag for tag in word_tag)
+        hasVerbG = 'VBG' in (tag for word_tag in sentence_tag for tag in word_tag)
+        hasVerbD = 'VBD' in (tag for word_tag in sentence_tag for tag in word_tag)
+
+        # if the sentence doesn't contain both noun and verb then delete
+        if not (hasNoun and (hasVerbD or hasVerbG)):
+            print("- removing Sentences doesn't have noun or verb:")
+            response_sentences.remove(sentence)
+
         if(len(sentence) < MIN_LENGTH_SENTENCE):
             print("- removing too short sentence:")
             print(sentence)
             response_sentences.remove(sentence)
-        elif(sentence[len(sentence)-1] != '.'):
+
+        if(sentence[len(sentence)-1] != '.'):
             # sentence does not end with '.'
             print("- removing incomplete sentence:")
             print(sentence)
             response_sentences.remove(sentence)
+
+
 
     for i in range(len(response_sentences)):
         sentence = response_sentences[i]
@@ -69,3 +87,6 @@ for response in responses:
     for i in range(len(response_sentences)):
         sentence = response_sentences[i]
         print("[", i, "] ", sentence)
+
+print("Result: ")
+print(responses)
