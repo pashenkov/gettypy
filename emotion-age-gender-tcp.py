@@ -207,7 +207,6 @@ def getGender(choosenIndex):
     return "male" if choosenIndex==1 else "female"
 
 
-
 age_model = ageModel()
 gender_model = genderModel()
 emotion_model = emotionModel()
@@ -223,7 +222,7 @@ shouldUpdateEmotion = False
 '''Timer Area'''
 currentTime = 0.0
 peopleLeaveTime=0.0
-jsonSendingInterval = 10.0
+jsonSendingInterval = 2.0
 
 counter = 10000
 
@@ -310,8 +309,6 @@ while True:
                 detected_face = img[int(y - margin_y):int(y + h + margin_y), int(x - margin_x):int(x + w + margin_x)]
             except:
                 print("detected face has no margin")
-
-
             try:
                 detected_face = cv2.resize(detected_face, (224, 224))
 
@@ -334,15 +331,27 @@ while True:
             predictions.append(data) # append data to the predictions list
 
             max_emotionIndex1.append(np.argmax(predictions[0][0]))  # find max of array
-
-            age01=int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0])
-            gender01=getGender(np.argmax(predictions[0][2]))
+            try:
+                age01=int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0])
+                gender01=getGender(np.argmax(predictions[0][2]))
+            except Exception as e:
+                print("exception", str(e))
 
             # when the predictions length is equal 2 get and append another emotion
             if(len(predictions)==2):
                 max_emotionIndex2.append(np.argmax(predictions[1][0]))
+                cv2.putText(img, emotions[np.argmax(predictions[1][0])], (int(x), int(y)),
+                            cv2.FONT_HERSHEY_SIMPLEX,1,(255, 255, 255), 2)
+            else:
+                cv2.putText(img, emotions[np.argmax(predictions[0][0])], (int(x), int(y)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+
+            try:
                 age02 = int(np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0])
                 gender02 = getGender(np.argmax(predictions[1][2]))
+            except Exception as e:
+                print("exception", str(e))
 
             # Update the emotion
             if (shouldUpdateEmotion):
@@ -357,7 +366,6 @@ while True:
                 emotion01 = emotions[emotionChoosenIndex1] # decide emotion01
                 emotion02 = emotions[emotionChoosenIndex2] # decide emotion02
 
-                # TODO DELETE LATER PRINT FOR TESTING
                 print("Output Emotion1: ", emotion01)
                 print("Output Emotion2: ", emotion02)
                 print("Output Gender1: ", gender01)
@@ -380,8 +388,6 @@ while True:
                 max_genderIndex1.clear()
                 max_genderIndex2.clear()
 
-
-            cv2.putText(img, emotions[emotionChoosenIndex1], (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
             ''' 
             # Draw Emotion Probabilities Table (discarded)
