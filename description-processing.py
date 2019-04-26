@@ -40,45 +40,46 @@ print("Tokenize sentences..")
 
 MIN_LENGTH_SENTENCE = 10
 
+chosen_response = []
+
 for response in responses:
+    # sepreate a paragraph by sentences
     response_sentences = sent_tokenize(response)
     print("\n### processing response..")
     print("# sentences: ", len(response_sentences))
 
+    # loop through each sentence in the tokenized sentence list
     for sentence in response_sentences:
 
-        # get the speech tags for the sentence
-        sentence_tag =pos_tag(word_tokenize(sentence))
-        print(sentence_tag)
+        sentence_tag = pos_tag(word_tokenize(sentence))
         # Check element if exists in list of list
         hasNoun = 'NN' in (tag for word_tag in sentence_tag for tag in word_tag)
         hasVerbG = 'VBG' in (tag for word_tag in sentence_tag for tag in word_tag)
         hasVerbD = 'VBD' in (tag for word_tag in sentence_tag for tag in word_tag)
-
-        # if the sentence doesn't contain both noun and verb then delete
         if not (hasNoun and (hasVerbD or hasVerbG)):
             print("- removing Sentences doesn't have noun or verb:")
+            print(sentence)
             response_sentences.remove(sentence)
-
-        if(len(sentence) < MIN_LENGTH_SENTENCE):
+        elif (len(sentence) < MIN_LENGTH_SENTENCE):
             print("- removing too short sentence:")
             print(sentence)
             response_sentences.remove(sentence)
-
-        if(sentence[len(sentence)-1] != '.'):
+        elif (sentence[len(sentence) - 1] != '.'):
             # sentence does not end with '.'
             print("- removing incomplete sentence:")
             print(sentence)
             response_sentences.remove(sentence)
-
-
+        elif (not sentence[0].isupper()):  # if not starting as capital word which means the word is broken
+            print("- removing the sentence which the first word maybe broken")
+            print(sentence)
+            response_sentences.remove(sentence)
 
     for i in range(len(response_sentences)):
         sentence = response_sentences[i]
-        if(not sentence[0].isalnum()):
+        if (not sentence[0].isalnum()):
             print("- removing characters not beginning with letters:")
             print(sentence)
-            while(not sentence[0].isalnum()):
+            while (not sentence[0].isalnum()):
                 sentence = sentence[1:]
             response_sentences[i] = sentence
 
@@ -86,7 +87,9 @@ for response in responses:
 
     for i in range(len(response_sentences)):
         sentence = response_sentences[i]
+        sentence = bytes(sentence, 'utf-8').decode('utf-8', 'ignore')
         print("[", i, "] ", sentence)
+        chosen_response.append(sentence)
 
-print("Result: ")
-print(responses)
+print("\nFinal Result:")
+print(chosen_response)
