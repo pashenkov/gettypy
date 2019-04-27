@@ -82,11 +82,18 @@ for response in responses:
         sentence_tag = pos_tag(word_tokenize(sentence))
         # Check element if exists in list of list
         hasNoun = 'NN' in (tag for word_tag in sentence_tag for tag in word_tag)
+        hasNounS = 'NNS' in (tag for word_tag in sentence_tag for tag in word_tag)
+        hasVerb = 'VB' in (tag for word_tag in sentence_tag for tag in word_tag)
         hasVerbG = 'VBG' in (tag for word_tag in sentence_tag for tag in word_tag)
         hasVerbD = 'VBD' in (tag for word_tag in sentence_tag for tag in word_tag)
-        if not (hasNoun and (hasVerbD or hasVerbG)):
-            print("- removing Sentences doesn't have noun or verb:")
+        hasVerbN = 'VBN' in (tag for word_tag in sentence_tag for tag in word_tag)
+        hasVerbP = 'VBP' in (tag for word_tag in sentence_tag for tag in word_tag)
+        hasVerbZ = 'VBZ' in (tag for word_tag in sentence_tag for tag in word_tag)
+        if not ((hasNoun or hasNounS) and
+                (hasVerb or hasVerbD or hasVerbG or hasVerbN or hasVerbP or hasVerbZ)):
+            print("- removing sentence without noun+verb:")
             print(sentence)
+            print(sentence_tag)
             response_sentences.remove(sentence)
 
     for sentence in response_sentences:
