@@ -87,23 +87,23 @@ for response in responses:
         if not (hasNoun and (hasVerbD or hasVerbG)):
             print("- removing Sentences doesn't have noun or verb:")
             print(sentence)
-            if(sentence in response_sentences)
+            if(sentence in response_sentences):
                 response_sentences.remove(sentence)
         if (len(sentence) < MIN_LENGTH_SENTENCE):
             print("- removing too short sentence:")
             print(sentence)
-            if(sentence in response_sentences)
+            if(sentence in response_sentences):
                 response_sentences.remove(sentence)
         if (sentence[len(sentence) - 1] != '.'):
             # sentence does not end with '.'
             print("- removing incomplete sentence:")
             print(sentence)
-            if(sentence in response_sentences)
+            if(sentence in response_sentences):
                 response_sentences.remove(sentence)
         if (not sentence[0].isupper()):  # if not starting as capital Character which means the word is broken
             print("- removing the sentence which the first word maybe broken")
             print(sentence)
-            if(sentence in response_sentences)
+            if(sentence in response_sentences):
                 response_sentences.remove(sentence)
 
     for i in range(len(response_sentences)):
