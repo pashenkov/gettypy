@@ -6,26 +6,26 @@ from nltk import pos_tag
 
 def degender(text):
     replacements = [
-        (' woman ', ' person '),
-        (' man ', ' person '),
-        (' guy ', ' person '),
-        (' girl ', ' person '),
-        (' boy ' , ' person '),
-        (' female ', ' person '),
-        (' male ', ' person '),
-        (' lady ', ' person '),
-        (' women ', ' people '),
-        (' men ', ' people '),
-        (' guys ', ' people '),
-        (' girls ', ' people '),
-        (' boys ', ' people '),
-        (' females ', ' people '),
-        (' males ', ' people '),
-        (' ladies ', ' people '),
-        (' he ', ' he/she '),
-        (' she ', ' he/she '),
-        (' his ', ' his/her '),
-        (' her ', ' his/her ')
+        (' woman', ' person'),
+        (' man', ' person'),
+        (' guy', ' person'),
+        (' girl', ' person'),
+        (' boy' , ' person'),
+        (' female', ' person'),
+        (' male', ' person'),
+        (' lady', ' person'),
+        (' women', ' people'),
+        (' men', ' people'),
+        (' guys', ' people'),
+        (' girls', ' people'),
+        (' boys', ' people'),
+        (' females', ' people'),
+        (' males', ' people'),
+        (' ladies', ' people'),
+        (' he', ' he/she'),
+        (' she', ' he/she'),
+        (' his', ' his/her'),
+        (' her', ' his/her')
     ]
 
     for s in replacements:
@@ -124,3 +124,9 @@ for response in responses:
 
 print("\nFinal Result:")
 print(chosen_response)
+
+print(len(chosen_response))
+with open('clean_description.txt', 'w') as f:
+    for res in chosen_response:
+        res= res.encode('ascii', 'ignore').decode('unicode_escape')
+        f.writelines(res+'\n')

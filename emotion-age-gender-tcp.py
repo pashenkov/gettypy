@@ -331,6 +331,7 @@ while True:
             predictions.append(data) # append data to the predictions list
 
             max_emotionIndex1.append(np.argmax(predictions[0][0]))  # find max of array
+
             try:
                 age01=int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0])
                 gender01=getGender(np.argmax(predictions[0][2]))
@@ -466,7 +467,7 @@ while True:
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
     cv2.imshow('img', img)
-    cv2.imshow('emotion probabilities', canvas)
+    # cv2.imshow('emotion probabilities', canvas)
 
     key = cv2.waitKey(1)
 
