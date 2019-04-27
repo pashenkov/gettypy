@@ -3,6 +3,35 @@ from pandas import ExcelFile
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk import pos_tag
 
+
+def degender(text):
+    replacements = [
+        (' woman ', ' person '),
+        (' man ', ' person '),
+        (' guy ', ' person '),
+        (' girl ', ' person '),
+        (' boy ' , ' person '),
+        (' female ', ' person '),
+        (' male ', ' person '),
+        (' lady ', ' person '),
+        (' women ', ' people '),
+        (' men ', ' people '),
+        (' guys ', ' people '),
+        (' girls ', ' people '),
+        (' boys ', ' people '),
+        (' females ', ' people '),
+        (' males ', ' people '),
+        (' ladies ', ' people '),
+        (' he ', ' he/she '),
+        (' she ', ' he/she '),
+        (' his ', ' his/her '),
+        (' her ', ' his/her ')
+    ]
+
+    for s in replacements:
+        text = text.replace(*s)
+    return text
+
 df = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Descriptions')
 
 # delete empty rows
@@ -50,7 +79,6 @@ for response in responses:
 
     # loop through each sentence in the tokenized sentence list
     for sentence in response_sentences:
-
         sentence_tag = pos_tag(word_tokenize(sentence))
         # Check element if exists in list of list
         hasNoun = 'NN' in (tag for word_tag in sentence_tag for tag in word_tag)
@@ -69,10 +97,12 @@ for response in responses:
             print("- removing incomplete sentence:")
             print(sentence)
             response_sentences.remove(sentence)
-        elif (not sentence[0].isupper()):  # if not starting as capital word which means the word is broken
+        elif (not sentence[0].isupper()):  # if not starting as capital Character which means the word is broken
             print("- removing the sentence which the first word maybe broken")
             print(sentence)
             response_sentences.remove(sentence)
+
+
 
     for i in range(len(response_sentences)):
         sentence = response_sentences[i]
@@ -87,7 +117,8 @@ for response in responses:
 
     for i in range(len(response_sentences)):
         sentence = response_sentences[i]
-        sentence = bytes(sentence, 'utf-8').decode('utf-8', 'ignore')
+        # before add to a new list degender the sentences
+        sentence = degender(sentence)
         print("[", i, "] ", sentence)
         chosen_response.append(sentence)
 
