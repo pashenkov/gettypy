@@ -13,11 +13,15 @@ import matplotlib.pyplot as plt
 from os import listdir
 import socket
 import time
+import pandas as pd
+from pandas import ExcelFile
+import numpy as np
+import random
 
 import threading
 
 
-# set server variables
+# region TCP Connections
 TCP_IP = '127.0.0.1'
 TCP_PORT = 7001
 BUFFER_SIZE = 512
@@ -30,9 +34,11 @@ conn, addr = s.accept()
 
 # print connection address when someone connects
 print('Connection address:', addr)
+# endregion
 
 enableGenderIcons = True
 
+# region Load Data
 male_icon = cv2.imread("../dataset/male.jpg")
 male_icon = cv2.resize(male_icon, (40, 40))
 
@@ -40,7 +46,51 @@ female_icon = cv2.imread("../dataset/female.jpg")
 female_icon = cv2.resize(female_icon, (40, 40))
 
 face_cascade = cv2.CascadeClassifier('../haarcascade_files/haarcascade_frontalface_default.xml')
+df = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Descriptions')
+indexNames = df[df['Reject'].isnull() == False].index
+# endregion
 
+# region Setup for Get Description by Index
+df.drop(indexNames, inplace=True)
+df_ageRange = df['Age Range'].dropna()
+df_numOfPeople = df['# of People'].dropna()
+df_emotion = df['Prompt'].dropna()
+df_responses = df['Response'].dropna()
+
+is_child = df_ageRange.str.contains("child")
+is_young = df_ageRange.str.contains("young")
+is_old = df_ageRange.str.contains("old")
+is_single = df_numOfPeople.astype(str).str.contains('1')
+is_multiple = df_numOfPeople.astype(str).str.contains('2') | df_numOfPeople.astype(str).str.contains('3+')
+is_happy = df_emotion.str.contains("happ")
+is_sad = df_emotion.str.contains("sad")
+is_angry = df_emotion.str.contains("angr")
+is_surprise = df_emotion.str.contains("surpri")
+is_disgust = df_emotion.str.contains("disgus")
+is_fear = df_emotion.str.contains("fear")
+is_netural = (is_happy|is_sad|is_angry|is_surprise|is_disgust|is_fear) == False
+
+
+df_child = df_ageRange.loc[is_child]
+df_young = df_ageRange.loc[is_young]
+df_old = df_ageRange.loc[is_old]
+
+df_single = df_numOfPeople.loc[is_single]
+df_multiple = df_numOfPeople.loc[is_multiple]
+
+df_happy = df_emotion.loc[is_happy].index
+df_sad = df_emotion.loc[is_sad].index
+df_angry = df_emotion.loc[is_angry].index
+df_surprise = df_emotion.loc[is_surprise].index
+df_disgust = df_emotion.loc[is_disgust].index
+df_fear = df_emotion.loc[is_fear].index
+df_neutral=  df_emotion.loc[is_netural].index
+# endregion
+
+
+# region Helper Dunctions
+def get_description_by_index(indexs):
+    return df_responses.iloc[random.choice(indexs)]
 
 def preprocess_image(image_path):
     img = load_img(image_path, target_size=(224, 224))
@@ -48,7 +98,6 @@ def preprocess_image(image_path):
     img = np.expand_dims(img, axis=0)
     img = preprocess_input(img)
     return img
-
 
 def loadEmotionModel():
     # define CNN model
@@ -79,7 +128,6 @@ def loadEmotionModel():
     num_classes = 7
     model.add(Dense(num_classes, activation='softmax'))
     return model
-
 
 def loadVggFaceModel():
     model = Sequential()
@@ -129,7 +177,6 @@ def loadVggFaceModel():
 
     return model
 
-
 def ageModel():
     model = loadVggFaceModel()
 
@@ -142,7 +189,6 @@ def ageModel():
     age_model.load_weights("../models/age_model_weights.h5")
     return age_model
 
-
 def genderModel():
     model = loadVggFaceModel()
 
@@ -154,7 +200,6 @@ def genderModel():
     gender_model = Model(inputs=model.input, outputs=base_model_output)
     gender_model.load_weights("../models/gender_model_weights.h5")
     return gender_model
-
 
 def emotionModel():
     # emotion_model = model_from_json(open("models/facial_expression_model_structure.json", "r").read())
@@ -206,17 +251,30 @@ def getMostFrequentElement(choosenIndex, defaultReturn):
 def getGender(choosenIndex):
     return "male" if choosenIndex==1 else "female"
 
+def getAgeRange(age):
+    if(0<=age<=17):
+        return 'child'
+    elif(17<age<=25):
+        return 'young'
+    elif(age>17):
+        return 'old'
 
+
+
+# endregion
+
+# region Load Trained Model
 age_model = ageModel()
 gender_model = genderModel()
 emotion_model = emotionModel()
+# endregion
 
 # age model has 101 outputs and its outputs will be multiplied by its index label.
 # sum will be apparent age
 output_indexes = np.array([i for i in range(0, 101)])
 
 emotions = ('angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral')
-
+emotionsIndex = [df_angry,df_disgust,df_fear,df_happy,df_sad,df_surprise,df_neutral]
 shouldUpdateEmotion = False
 
 '''Timer Area'''
@@ -226,25 +284,27 @@ jsonSendingInterval = 2.0
 
 counter = 10000
 
-'''Prediction Lists for Getting the Most Frequent Emotion age gender'''
+# region Prediction Lists for Getting the Most Frequent Emotion age gender
 max_emotionIndex1 = []
 max_emotionIndex2 = []
 max_genderIndex1 = []
 max_genderIndex2 = []
+# endregion
 
 
 cap = cv2.VideoCapture(0)  # capture webcam
 
-'''DATA FOR JSON'''
+# region DATA FOR JSON
 numPep = 0
 emotion01 = "neutral"
 emotion02 = "neutral"
 gender01 = "female"
 gender02 = "female"
-age01 = 0
-age02 = 0
+age01 = ''
+age02 = ''
 title = "This is a Title"
 description = "This is a description!!!!!!!!!!!!!!!"
+# endregion
 
 
 while True:
@@ -262,6 +322,7 @@ while True:
     else:  # so when it is a tuple which means no people are detected
         numPep = 0
 
+
     # Timer for update the emotion
     if currentTime < time.time():
         currentTime = time.time() + jsonSendingInterval  # reset timer
@@ -273,10 +334,11 @@ while True:
             peopleLeaveTime= time.time()
             emotion01 = "neutral"
             emotion02 = "neutral"
-            age01 = 0
-            age02 = 0
+            age01 = 'young'
+            age02 = 'young'
             gender01 = "female"
             gender02 = "female"
+            description = ''
             jsonSender()
     else:
         peopleLeaveTime =time.time()# reset timer
@@ -333,7 +395,7 @@ while True:
             max_emotionIndex1.append(np.argmax(predictions[0][0]))  # find max of array
 
             try:
-                age01=int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0])
+                age01= getAgeRange(int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0]))
                 gender01=getGender(np.argmax(predictions[0][2]))
             except Exception as e:
                 print("exception", str(e))
@@ -349,7 +411,7 @@ while True:
 
 
             try:
-                age02 = int(np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0])
+                age02 = getAgeRange(int(np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0]))
                 gender02 = getGender(np.argmax(predictions[1][2]))
             except Exception as e:
                 print("exception", str(e))
@@ -365,6 +427,7 @@ while True:
                 emotionChoosenIndex2 = getMostFrequentElement(max_emotionIndex2, 6)
 
                 emotion01 = emotions[emotionChoosenIndex1] # decide emotion01
+                # description = get_description_by_index(df_happy)
                 emotion02 = emotions[emotionChoosenIndex2] # decide emotion02
 
                 print("Output Emotion1: ", emotion01)
@@ -379,7 +442,7 @@ while True:
                     if len(max_emotionIndex2) == 0:
                         emotion02 = "neutral"
                         gender02 = "female"
-                        age02 = 0
+                        age02 = 'young'
 
                 jsonSender()
 
