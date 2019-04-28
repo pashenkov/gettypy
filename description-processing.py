@@ -139,6 +139,11 @@ for n in range(df_responses.count()):
                     sentence = sentence[1:]
                 response_sentences[i] = sentence
 
+        # keep descriptions to 3 sentences maximum
+        if(len(response_sentences) > 2):
+            response_sentences = response_sentences[0:2]
+            print("clip to ", len(response_sentences), " sentences")
+
         print("\n# sentences after processing: ", len(response_sentences))
 
         response_str = ""
