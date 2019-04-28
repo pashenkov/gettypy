@@ -136,8 +136,22 @@ for response in responses:
 print("\nFinal Result:")
 print(chosen_response)
 
+'''
 print(len(chosen_response))
 with open('clean_description.txt', 'w') as f:
     for res in chosen_response:
         res= res.encode('ascii', 'ignore').decode('unicode_escape')
         f.writelines(res+'\n')
+'''
+
+from pandas import ExcelWriter
+
+df_out = pd.DataFrame(chosen_response)
+
+print("dataframe to write:")
+print(df_out)
+
+# TODO: write one description per row, keep original df columns
+writer = ExcelWriter('clean_description.xlsx')
+df_out.to_excel(writer, 'Processed Descriptions')
+writer.save()
