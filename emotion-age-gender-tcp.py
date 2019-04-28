@@ -375,13 +375,7 @@ while True:
             age02 = 'young'
             gender01 = "female"
             gender02 = "female"
-            try:
-                description = get_description_by_index(df_single.index)
-                title = get_title_by_index(df_single_title.index)
-            except Exception as e:
-                description = df_responses.iloc[0]
-                title = df2_title.iloc[0]
-
+            description = ''
             jsonSender()
     else:
         peopleLeaveTime =time.time()# reset timer
@@ -441,7 +435,7 @@ while True:
                 age01= getAgeRange(int(np.floor(np.sum(predictions[0][1] * output_indexes, axis=1))[0]))
                 gender01=getGender(np.argmax(predictions[0][2]))
             except Exception as e:
-                age01 = random.randrange(0,70)
+                print("exception", str(e))
 
             # when the predictions length is equal 2 get and append another emotion
             if(len(predictions)==2):
@@ -451,11 +445,13 @@ while True:
             else:
                 cv2.putText(img, emotions[np.argmax(predictions[0][0])], (int(x), int(y)),
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+
             try:
                 age02 = getAgeRange(int(np.floor(np.sum(predictions[1][1] * output_indexes, axis=1))[0]))
                 gender02 = getGender(np.argmax(predictions[1][2]))
             except Exception as e:
-                age02 = random.randrange(0,70)
+                print("exception", str(e))
 
             # Update the emotion
             if (shouldUpdateEmotion):
@@ -479,42 +475,42 @@ while True:
                 print("Output Age2: ", age02)
 
                 # reset the emotion when people leave
-                indexs = []
-                indexs_title = None
                 if numPep==1:
                     if len(max_emotionIndex2) == 0:
                         emotion02 = "neutral"
                         gender02 = "female"
                         age02 = 'young'
-                    try:
-                        indexs_title = df_single_title
-                        if(age01=='child'):
-                            indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_child))
-                        elif(age01=='young'):
-                            indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_young))
-                        elif(age01=='old'):
-                            indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_old))
-                    except Exception as e:
-                        print("exception", str(e))
+                    indexs =[]
+                    indexs_title = df_single_title
+                    if(age01=='child'):
+                        indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_child))
+                    elif(age01=='young'):
+                        indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_young))
+                    elif(age01=='old'):
+                        indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_old))
                 else:
                     #indexs = set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple)
-                    try:
-                        indexs_title = df_multiple_title
-                        if (age02 == 'child'):
-                            indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_child))
-                        elif (age02 == 'young'):
-                            indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_young))
-                        elif (age02 == 'old'):
-                            indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_old))
-                    except Exception as e:
-                        print("exception", str(e))
+                    indexs = []
+                    indexs_title = df_multiple_title
+                    if (age02 == 'child'):
+                        indexs = list(
+                            set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_child))
+                    elif (age02 == 'young'):
+                        indexs = list(
+                            set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_young))
+                    elif (age02 == 'old'):
+                        indexs = list(
+                            set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_old))
 
-                    try:
-                        description = get_description_by_index(indexs)
-                        title = get_title_by_index(indexs_title)
-                    except Exception as e:
-                        description = df_responses.iloc[0]
-                        title = df2_title.iloc[0]
+                description = get_description_by_index(indexs)
+
+                #random_val = random.randrange(0,400)
+                title = get_title_by_index(indexs_title)
+                # title = random.choice(title_arr)
+                # print("COUNT TITLE: ",counter_title)
+                # counter_title+=1
+                # if(counter_title>300):
+                #     counter_title=0
 
                 jsonSender()
 
