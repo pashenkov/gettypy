@@ -71,12 +71,12 @@ is_fear = df_emotion.str.contains("fear")
 is_netural = (is_happy|is_sad|is_angry|is_surprise|is_disgust|is_fear) == False
 
 
-df_child = df_ageRange.loc[is_child]
-df_young = df_ageRange.loc[is_young]
-df_old = df_ageRange.loc[is_old]
+df_child = df_ageRange.loc[is_child].index
+df_young = df_ageRange.loc[is_young].index
+df_old = df_ageRange.loc[is_old].index
 
-df_single = df_numOfPeople.loc[is_single]
-df_multiple = df_numOfPeople.loc[is_multiple]
+df_single = df_numOfPeople.loc[is_single].index
+df_multiple = df_numOfPeople.loc[is_multiple].index
 
 df_happy = df_emotion.loc[is_happy].index
 df_sad = df_emotion.loc[is_sad].index
@@ -90,7 +90,7 @@ df_neutral=  df_emotion.loc[is_netural].index
 
 # region Helper Dunctions
 def get_description_by_index(indexs):
-    return df_responses.iloc[random.choice(indexs)]
+    return df_responses.iloc[random.choice(indexs-1)]
 
 def preprocess_image(image_path):
     img = load_img(image_path, target_size=(224, 224))
@@ -427,7 +427,7 @@ while True:
                 emotionChoosenIndex2 = getMostFrequentElement(max_emotionIndex2, 6)
 
                 emotion01 = emotions[emotionChoosenIndex1] # decide emotion01
-                # description = get_description_by_index(df_happy)
+
                 emotion02 = emotions[emotionChoosenIndex2] # decide emotion02
 
                 print("Output Emotion1: ", emotion01)
@@ -443,6 +443,20 @@ while True:
                         emotion02 = "neutral"
                         gender02 = "female"
                         age02 = 'young'
+                        try:
+                            #indexs = set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single)
+                            indexs = emotionsIndex[emotionChoosenIndex1]
+                            description = get_description_by_index(indexs)
+                        except Exception as e:
+                            print("exception", str(e))
+                else:
+                    try:
+                        #indexs = set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple)
+                        indexs = emotionsIndex[emotionChoosenIndex2]
+                        description = get_description_by_index(indexs)
+                    except Exception as e:
+                        print("exception", str(e))
+
 
                 jsonSender()
 
