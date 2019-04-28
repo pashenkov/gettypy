@@ -18,8 +18,10 @@ from pandas import ExcelFile
 import numpy as np
 import random
 
-import threading
+from pandas import ExcelWriter
 
+import threading
+counter_title =50
 
 # region TCP Connections
 TCP_IP = '127.0.0.1'
@@ -46,16 +48,48 @@ female_icon = cv2.imread("../dataset/female.jpg")
 female_icon = cv2.resize(female_icon, (40, 40))
 
 face_cascade = cv2.CascadeClassifier('../haarcascade_files/haarcascade_frontalface_default.xml')
-df = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Descriptions')
-indexNames = df[df['Reject'].isnull() == False].index
+df1 = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Descriptions')
+df2 = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Titles')
+# title_arr=df2['Title'].as_matrix()
+#print("TITLE ARRAY: ",title_arr)
+indexNames = df1[df1['Reject'].isnull() == False].index
+
+f = open("title.txt", "r")
+title_arr=f.read().split('\n')
+indexNames_title = df2[df2['Reject'].isnull() == False].index
 # endregion
+# df2_title = df2['Title']
+#region Setup for Get Description by index
+df2.drop(indexNames_title,inplace=True)
+df2_title = df2['Title']
+df_numOfPeople_title = df2['# of People']
+
+newdf2 = pd.concat([df2_title,df_numOfPeople_title],axis=1)
+newdf2 = newdf2.dropna()
+df2_title = newdf2['Title']
+df_numOfPeople_title = newdf2['# of People']
+
+is_single_title = df_numOfPeople_title.astype(str).str.contains('1')
+is_multiple_title = df_numOfPeople_title.astype(str).str.contains('2') | df_numOfPeople_title.astype(str).str.contains('3+')
+df_single_title = df_numOfPeople_title.loc[is_single_title].index
+df_multiple_title = df_numOfPeople_title.loc[is_multiple_title].index
+
 
 # region Setup for Get Description by Index
-df.drop(indexNames, inplace=True)
-df_ageRange = df['Age Range'].dropna()
-df_numOfPeople = df['# of People'].dropna()
-df_emotion = df['Prompt'].dropna()
-df_responses = df['Response'].dropna()
+df1.drop(indexNames, inplace=True)
+
+df_ageRange = df1['Age Range']
+df_numOfPeople = df1['# of People']
+df_emotion = df1['Prompt']
+df_responses = df1['Edited Response']
+
+newdf1 = pd.concat([df_ageRange, df_numOfPeople,df_emotion,df_responses],axis=1)
+newdf1 = newdf1.dropna()
+df_ageRange = newdf1['Age Range']
+df_numOfPeople = newdf1['# of People']
+df_emotion = newdf1['Prompt']
+df_responses = newdf1['Edited Response']
+
 
 is_child = df_ageRange.str.contains("child")
 is_young = df_ageRange.str.contains("young")
@@ -91,6 +125,9 @@ df_neutral=  df_emotion.loc[is_netural].index
 # region Helper Dunctions
 def get_description_by_index(indexs):
     return df_responses[random.choice(indexs)]
+
+def get_title_by_index(indexs):
+    return df2_title[random.choice(indexs)]
 
 def preprocess_image(image_path):
     img = load_img(image_path, target_size=(224, 224))
@@ -444,6 +481,7 @@ while True:
                         gender02 = "female"
                         age02 = 'young'
                     indexs =[]
+                    indexs_title = df_single_title
                     if(age01=='child'):
                         indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_child))
                     elif(age01=='young'):
@@ -453,6 +491,7 @@ while True:
                 else:
                     #indexs = set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple)
                     indexs = []
+                    indexs_title = df_multiple_title
                     if (age02 == 'child'):
                         indexs = list(
                             set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_child))
@@ -464,6 +503,15 @@ while True:
                             set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_old))
 
                 description = get_description_by_index(indexs)
+
+                #random_val = random.randrange(0,400)
+                title = get_title_by_index(indexs_title)
+                # title = random.choice(title_arr)
+                # print("COUNT TITLE: ",counter_title)
+                # counter_title+=1
+                # if(counter_title>300):
+                #     counter_title=0
+
                 jsonSender()
 
                 # Reset the List
