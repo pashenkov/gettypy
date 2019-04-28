@@ -90,7 +90,7 @@ df_neutral=  df_emotion.loc[is_netural].index
 
 # region Helper Dunctions
 def get_description_by_index(indexs):
-    return df_responses.iloc[random.choice(indexs-1)]
+    return df_responses[random.choice(indexs)]
 
 def preprocess_image(image_path):
     img = load_img(image_path, target_size=(224, 224))
@@ -443,21 +443,27 @@ while True:
                         emotion02 = "neutral"
                         gender02 = "female"
                         age02 = 'young'
-                        try:
-                            #indexs = set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single)
-                            indexs = emotionsIndex[emotionChoosenIndex1]
-                            description = get_description_by_index(indexs)
-                        except Exception as e:
-                            print("exception", str(e))
+                    indexs =[]
+                    if(age01=='child'):
+                        indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_child))
+                    elif(age01=='young'):
+                        indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_young))
+                    elif(age01=='old'):
+                        indexs = list(set(emotionsIndex[emotionChoosenIndex1]).intersection(df_single).intersection(df_old))
                 else:
-                    try:
-                        #indexs = set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple)
-                        indexs = emotionsIndex[emotionChoosenIndex2]
-                        description = get_description_by_index(indexs)
-                    except Exception as e:
-                        print("exception", str(e))
+                    #indexs = set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple)
+                    indexs = []
+                    if (age02 == 'child'):
+                        indexs = list(
+                            set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_child))
+                    elif (age02 == 'young'):
+                        indexs = list(
+                            set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_young))
+                    elif (age02 == 'old'):
+                        indexs = list(
+                            set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_old))
 
-
+                description = get_description_by_index(indexs)
                 jsonSender()
 
                 # Reset the List
