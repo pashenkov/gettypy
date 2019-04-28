@@ -5,33 +5,46 @@ from nltk import pos_tag
 
 
 def degender(text):
-    punctuations=[' ',',','.','?',';','!']
+    punctuations=[' ', ',', '.', '?', ';', '!']
     punctuation = ' '
-    replacements = [
-        (' woman'+punctuation, ' person'+punctuation),
-        (' man '+punctuation, ' person'+punctuation),
-        (' guy '+punctuation, ' person'+punctuation),
-        (' girl '+punctuation, ' person'+punctuation),
-        (' boy'+punctuation, ' person'+punctuation),
-        (' female'+punctuation, ' person'+punctuation),
-        (' male'+punctuation, ' person'+punctuation),
-        (' lady'+punctuation, ' person'+punctuation),
-        (' women'+punctuation, ' people'+punctuation),
-        (' men'+punctuation, ' people'+punctuation),
-        (' guys'+punctuation, ' people'+punctuation),
-        (' girls'+punctuation, ' people'+punctuation),
-        (' boys'+punctuation, ' people'+punctuation),
-        (' females'+punctuation, ' people'+punctuation),
-        (' males'+punctuation, ' people'+punctuation),
-        (' ladies'+punctuation, ' people'+punctuation),
-        (' he'+punctuation, ' they'+punctuation),
-        (' she'+punctuation, ' they'+punctuation),
-        (' his'+punctuation, ' their'+punctuation),
-        (' her'+punctuation, ' their'+punctuation),
-        (' him'+punctuation, ' them'+punctuation),
-        (' king'+punctuation, ' royalty'+punctuation),
-        (' queen'+punctuation, ' royalty'+punctuation),
+    replacement_pairs = [
+        ('woman',      'person'),
+        ('man',        'person'),
+        ('guy',        'person'),
+        ('girl',       'person'),
+        ('boy',        'person'),
+        ('female',     'person'),
+        ('male',       'person'),
+        ('lady',       'person'),
+        ('women',      'people'),
+        ('men',        'people'),
+        ('guys',       'people'),
+        ('girls',      'people'),
+        ('boys',       'people'),
+        ('females',    'people'),
+        ('males',      'people'),
+        ('ladies',     'people'),
+        ('he',         'they'),
+        ('she',        'they'),
+        ('his',        'their'),
+        ('her',        'their'),
+        ('him',        'them'),
+        ('king',       'royal'),
+        ('queen',      'royal'),
+        ('woman\'s',   'person\'s'),
+        ('man\'s',     'person\'s'),
+        ('boy\'s',     'boy\'s'),
+        ('girl\'s',    'girl\'s'),
+        ('himself',    'themselves'),
+        ('herself',    'themselves')
     ]
+
+    replacements = []
+    for pair in replacement_pairs:
+        for p in punctuations:
+            replacements.append((' '+pair[0]+p, ' '+pair[1]+p))
+            replacements.append((pair[0].capitalize()+p,
+                                 pair[1].capitalize()+p))
 
     for p in punctuations:
         punctuation = p
