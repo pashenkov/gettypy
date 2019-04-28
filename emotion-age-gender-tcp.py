@@ -375,7 +375,6 @@ while True:
             age02 = 'young'
             gender01 = "female"
             gender02 = "female"
-            description = ''
             jsonSender()
     else:
         peopleLeaveTime =time.time()# reset timer
