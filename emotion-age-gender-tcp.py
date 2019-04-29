@@ -21,7 +21,6 @@ import sys, urllib.request
 from pandas import ExcelWriter
 
 import threading
-counter_title =50
 
 # region TCP Connections
 TCP_IP = '127.0.0.1'
@@ -38,8 +37,6 @@ conn, addr = s.accept()
 print('Connection address:', addr)
 # endregion
 
-enableGenderIcons = True
-
 # region Load Data
 male_icon = cv2.imread("../dataset/male.jpg")
 male_icon = cv2.resize(male_icon, (40, 40))
@@ -50,15 +47,10 @@ female_icon = cv2.resize(female_icon, (40, 40))
 face_cascade = cv2.CascadeClassifier('../haarcascade_files/haarcascade_frontalface_default.xml')
 df1 = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Descriptions')
 df2 = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Titles')
-
-indexNames = df1[df1['Reject'].isnull() == False].index
-
-indexNames_title = df2[df2['Reject'].isnull() == False].index
-
-
-
+# endregion
 
 #region Setup for Get Title by index
+indexNames_title = df2[df2['Reject'].isnull() == False].index
 df2.drop(indexNames_title,inplace=True)
 df2_title = df2['Title']
 df_numOfPeople_title = df2['# of People']
@@ -73,7 +65,6 @@ with open('titles.txt', 'w') as f:
 
 titles_list = open("titles.txt", 'r').read().split('\n')
 
-
 df_numOfPeople_title = newdf2['# of People']
 
 is_single_title = df_numOfPeople_title.astype(str).str.contains('1')
@@ -83,6 +74,7 @@ df_multiple_title = df_numOfPeople_title.loc[is_multiple_title].index
 # endregion
 
 # region Setup for Get Description by Index
+indexNames = df1[df1['Reject'].isnull() == False].index
 df1.drop(indexNames, inplace=True)
 
 df_ageRange = df1['Age Range']
@@ -104,7 +96,6 @@ with open('descriptions.txt', 'w') as f:
 
 descriptions_list = open("descriptions.txt", 'r').read().split('\n')
 
-
 is_child = df_ageRange.str.contains("child")
 is_young = df_ageRange.str.contains("young")
 is_old = df_ageRange.str.contains("old")
@@ -117,7 +108,6 @@ is_surprise = df_emotion.str.contains("surpri")
 is_disgust = df_emotion.str.contains("disgus")
 is_fear = df_emotion.str.contains("fear")
 is_netural = (is_happy|is_sad|is_angry|is_surprise|is_disgust|is_fear) == False
-
 
 df_child = df_ageRange.loc[is_child].index
 df_young = df_ageRange.loc[is_young].index
@@ -135,8 +125,7 @@ df_fear = df_emotion.loc[is_fear].index
 df_neutral=  df_emotion.loc[is_netural].index
 # endregion
 
-
-# region Helper Dunctions
+# region Helper Functions
 def get_description_by_index(indexs):
     return df_responses[random.choice(indexs)]
 
@@ -258,7 +247,7 @@ def emotionModel():
     emotion_model.load_weights('../models/facial_expression_model_weights.h5')  # load weights
     return emotion_model
 
-# send json to touchdesigner
+# send json to touch designer
 def jsonSender():
     #threading.Timer(5.0, jsonSender).start()
     print("send message..")
@@ -279,8 +268,8 @@ def jsonSender():
 # return the most frequency
 def mostFrequent(arr, n):
     arr.sort()
-    max_count = 1;
-    res = arr[0];
+    max_count = 1
+    res = arr[0]
     curr_count = 1
 
     for i in range(1, n):
@@ -320,6 +309,7 @@ gender_model = genderModel()
 emotion_model = emotionModel()
 # endregion
 
+# region Opencv Detection
 # age model has 101 outputs and its outputs will be multiplied by its index label.
 # sum will be apparent age
 output_indexes = np.array([i for i in range(0, 101)])
@@ -328,24 +318,25 @@ emotions = ('angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral')
 emotionsIndex = [df_angry,df_disgust,df_fear,df_happy,df_sad,df_surprise,df_neutral]
 shouldUpdateEmotion = False
 
-'''Timer Area'''
-currentTime = 0.0
-peopleLeaveTime=0.0
-jsonSendingInterval = 4.0
-
-counter = 10000
-
-# region Prediction Lists for Getting the Most Frequent Emotion age gender
+# Prediction Lists for Getting the Most Frequent Emotion age gender
 max_emotionIndex1 = []
 max_emotionIndex2 = []
 max_genderIndex1 = []
 max_genderIndex2 = []
+
+#endregion
+
+# region Timer Variables
+currentTime = 0.0
+peopleLeaveTime=0.0
+jsonSendingInterval = 4.0
 # endregion
 
-
+# region Opencv Declaration
 cap = cv2.VideoCapture(0)  # capture webcam
+# endregion
 
-# region DATA FOR JSON
+# region JSON DATA
 numPep = 0
 emotion01 = "neutral"
 emotion02 = "neutral"
@@ -363,6 +354,8 @@ while True:
     ret, img = cap.read()
     # img = cv2.resize(img, (640, 360))
 
+    '''Video Cropping'''
+    img = img[0:640,0:500]
     canvas = np.zeros((640, 480, 3), dtype="uint8")
     faces = face_cascade.detectMultiScale(img, 1.3, 5)
 
@@ -398,7 +391,7 @@ while True:
 
     predictions = [] # a list for saving multiple emotions
     for (x, y, w, h) in faces:
-        if w > 50:  # 130: #ignore small faces
+        if w > 40:  # 130: #ignore small faces
 
             # extract detected face
             detected_face = img[int(y):int(y + h), int(x):int(x + w)]  # crop detected face
@@ -517,15 +510,12 @@ while True:
                         indexs = list(
                             set(emotionsIndex[emotionChoosenIndex1]).intersection(df_multiple).intersection(df_old))
 
-                description = get_description_by_index(indexs)
-
-                #random_val = random.randrange(0,400)
-                title = get_title_by_index(indexs_title)
-                # title = random.choice(title_arr)
-                # print("COUNT TITLE: ",counter_title)
-                # counter_title+=1
-                # if(counter_title>300):
-                #     counter_title=0
+                try:
+                    description = get_description_by_index(indexs)
+                    title = get_title_by_index(indexs_title)
+                except Exception as e:
+                    title = random.choice(titles_list)
+                    description = random.choice(descriptions_list)
 
                 jsonSender()
 
@@ -535,19 +525,18 @@ while True:
                 max_genderIndex1.clear()
                 max_genderIndex2.clear()
 
+            # region Discard Later
 
-            ''' 
             # Draw Emotion Probabilities Table (discarded)
-            for i in range(len(emotions)):
-                # construct the label text
-                text = "{}: {:.2f}%".format(emotions[i], predictions[0][i] * 100)
-                bar_width = int(predictions[0][i] * 300)
-                cv2.rectangle(canvas, (7, (i * 35) + 5),
-                              (bar_width, (i * 35) + 35), (0, 0, 255), -1)
-                cv2.putText(canvas, text, (10, (i * 35) + 23),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45,
-                            (255, 255, 255), 2)
-            '''
+            # for i in range(len(emotions)):
+            #     # construct the label text
+            #     text = "{}: {:.2f}%".format(emotions[i], predictions[0][i] * 100)
+            #     bar_width = int(predictions[0][i] * 300)
+            #     cv2.rectangle(canvas, (7, (i * 35) + 5),
+            #                   (bar_width, (i * 35) + 35), (0, 0, 255), -1)
+            #     cv2.putText(canvas, text, (10, (i * 35) + 23),
+            #                 cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+            #                 (255, 255, 255), 2)
             # try:
             #     # age gender data set has 40% margin around the face. expand detected face.
             #     margin = 30
@@ -609,6 +598,7 @@ while True:
             # except Exception as e:
             #     print("exception", str(e))
 
+            # endregion
 
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
