@@ -17,7 +17,7 @@ import pandas as pd
 from pandas import ExcelFile
 import numpy as np
 import random
-
+import sys, urllib.request
 from pandas import ExcelWriter
 
 import threading
@@ -50,16 +50,15 @@ female_icon = cv2.resize(female_icon, (40, 40))
 face_cascade = cv2.CascadeClassifier('../haarcascade_files/haarcascade_frontalface_default.xml')
 df1 = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Descriptions')
 df2 = pd.read_excel('TECH 2709 Getty Dataset.xlsx', sheet_name='Generated Titles')
-# title_arr=df2['Title'].as_matrix()
-#print("TITLE ARRAY: ",title_arr)
+
 indexNames = df1[df1['Reject'].isnull() == False].index
 
-f = open("title.txt", "r")
-title_arr=f.read().split('\n')
 indexNames_title = df2[df2['Reject'].isnull() == False].index
-# endregion
-# df2_title = df2['Title']
-#region Setup for Get Description by index
+
+
+
+
+#region Setup for Get Title by index
 df2.drop(indexNames_title,inplace=True)
 df2_title = df2['Title']
 df_numOfPeople_title = df2['# of People']
@@ -67,13 +66,21 @@ df_numOfPeople_title = df2['# of People']
 newdf2 = pd.concat([df2_title,df_numOfPeople_title],axis=1)
 newdf2 = newdf2.dropna()
 df2_title = newdf2['Title']
+
+with open('titles.txt', 'w') as f:
+    for item in df2_title.values.tolist():
+        f.write("%s\n" % item)
+
+titles_list = open("titles.txt", 'r').read().split('\n')
+
+
 df_numOfPeople_title = newdf2['# of People']
 
 is_single_title = df_numOfPeople_title.astype(str).str.contains('1')
 is_multiple_title = df_numOfPeople_title.astype(str).str.contains('2') | df_numOfPeople_title.astype(str).str.contains('3+')
 df_single_title = df_numOfPeople_title.loc[is_single_title].index
 df_multiple_title = df_numOfPeople_title.loc[is_multiple_title].index
-
+# endregion
 
 # region Setup for Get Description by Index
 df1.drop(indexNames, inplace=True)
@@ -89,6 +96,13 @@ df_ageRange = newdf1['Age Range']
 df_numOfPeople = newdf1['# of People']
 df_emotion = newdf1['Prompt']
 df_responses = newdf1['Edited Response']
+
+with open('descriptions.txt', 'w') as f:
+    for item in df_responses.values.tolist():
+        content ="%s\n" % item
+        f.write(content.encode("gbk", 'ignore').decode("gbk", "ignore"))
+
+descriptions_list = open("descriptions.txt", 'r').read().split('\n')
 
 
 is_child = df_ageRange.str.contains("child")
@@ -317,7 +331,7 @@ shouldUpdateEmotion = False
 '''Timer Area'''
 currentTime = 0.0
 peopleLeaveTime=0.0
-jsonSendingInterval = 2.0
+jsonSendingInterval = 4.0
 
 counter = 10000
 
@@ -375,6 +389,8 @@ while True:
             age02 = 'young'
             gender01 = "female"
             gender02 = "female"
+            title = random.choice(titles_list)
+            description = random.choice(descriptions_list)
             jsonSender()
     else:
         peopleLeaveTime =time.time()# reset timer
